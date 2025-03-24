@@ -664,27 +664,49 @@ restore_database() {
             
             # Monitor progress
             processed=0
+            progress_stuck_count=0
+            max_stuck_count=5  # If progress appears stuck for this many iterations, assume it's complete
+
             while kill -0 $restore_pid 2>/dev/null; do
                 # Update progress approximately
+                old_processed=$processed
                 processed=$((processed + total_objects / 100))
-                if [ $processed -gt $total_objects ]; then
-                    processed=$total_objects
+
+                if [ $processed -gt $((total_objects - 5)) ]; then
+                    # When we're close to completion, check if process is actually still working
+                    if [ $processed -eq $old_processed ]; then
+                        progress_stuck_count=$((progress_stuck_count + 1))
+                    else
+                        progress_stuck_count=0
+                    fi
+
+                    # If progress appears stuck at high percentage, assume it's complete
+                    if [ $progress_stuck_count -ge $max_stuck_count ]; then
+                        break
+                    fi
+
+                    # Cap at total_objects - 1 to show we're almost done
+                    processed=$((total_objects - 1))
                 fi
+
                 show_progress_bar $processed $total_objects
                 sleep 1
             done
-            
+
+            # Show 100% progress
+            show_progress_bar $total_objects $total_objects
+            echo
+
             # Clean up pipe
             rm -f "$pipe_file"
-            
+
             # Check if restore completed successfully
             wait $restore_pid
             restore_status=$?
             if [ $restore_status -eq 0 ]; then
-                show_progress_bar $total_objects $total_objects
-                echo -e "\n${GREEN}${BOLD}Restore completed successfully!${NC}"
+                echo -e "${GREEN}${BOLD}Restore completed successfully!${NC}"
             else
-                echo -e "\n${RED}${BOLD}Restore failed with status $restore_status.${NC}"
+                echo -e "${RED}${BOLD}Restore failed with status $restore_status.${NC}"
                 exit 1
             fi
             ;;
@@ -704,15 +726,38 @@ restore_database() {
                     
                     # Monitor progress
                     processed=0
+                    progress_stuck_count=0
+                    max_stuck_count=5  # If progress appears stuck for this many iterations, assume it's complete
+
                     while kill -0 $restore_pid 2>/dev/null; do
+                        old_processed=$processed
                         processed=$((processed + total_objects / 100))
-                        if [ $processed -gt $total_objects ]; then
-                            processed=$total_objects
+
+                        if [ $processed -gt $((total_objects - 5)) ]; then
+                            # When we're close to completion, check if process is actually still working
+                            if [ $processed -eq $old_processed ]; then
+                                progress_stuck_count=$((progress_stuck_count + 1))
+                            else
+                                progress_stuck_count=0
+                            fi
+
+                            # If progress appears stuck at high percentage, assume it's complete
+                            if [ $progress_stuck_count -ge $max_stuck_count ]; then
+                                break
+                            fi
+
+                            # Cap at total_objects - 1 to show we're almost done
+                            processed=$((total_objects - 1))
                         fi
+
                         show_progress_bar $processed $total_objects
                         sleep 1
                     done
-                    
+
+                    # Show 100% progress
+                    show_progress_bar $total_objects $total_objects
+                    echo
+
                     wait $restore_pid
                     restore_status=$?
                 fi
@@ -722,17 +767,40 @@ restore_database() {
                 else
                     bunzip2 -c "$file" | PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" > /dev/null 2>&1 &
                     restore_pid=$!
-                    
+
                     processed=0
+                    progress_stuck_count=0
+                    max_stuck_count=5  # If progress appears stuck for this many iterations, assume it's complete
+
                     while kill -0 $restore_pid 2>/dev/null; do
+                        old_processed=$processed
                         processed=$((processed + total_objects / 100))
-                        if [ $processed -gt $total_objects ]; then
-                            processed=$total_objects
+
+                        if [ $processed -gt $((total_objects - 5)) ]; then
+                            # When we're close to completion, check if process is actually still working
+                            if [ $processed -eq $old_processed ]; then
+                                progress_stuck_count=$((progress_stuck_count + 1))
+                            else
+                                progress_stuck_count=0
+                            fi
+
+                            # If progress appears stuck at high percentage, assume it's complete
+                            if [ $progress_stuck_count -ge $max_stuck_count ]; then
+                                break
+                            fi
+
+                            # Cap at total_objects - 1 to show we're almost done
+                            processed=$((total_objects - 1))
                         fi
+
                         show_progress_bar $processed $total_objects
                         sleep 1
                     done
-                    
+
+                    # Show 100% progress
+                    show_progress_bar $total_objects $total_objects
+                    echo
+
                     wait $restore_pid
                     restore_status=$?
                 fi
@@ -742,17 +810,40 @@ restore_database() {
                 else
                     xz -dc "$file" | PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" > /dev/null 2>&1 &
                     restore_pid=$!
-                    
+
                     processed=0
+                    progress_stuck_count=0
+                    max_stuck_count=5  # If progress appears stuck for this many iterations, assume it's complete
+
                     while kill -0 $restore_pid 2>/dev/null; do
+                        old_processed=$processed
                         processed=$((processed + total_objects / 100))
-                        if [ $processed -gt $total_objects ]; then
-                            processed=$total_objects
+
+                        if [ $processed -gt $((total_objects - 5)) ]; then
+                            # When we're close to completion, check if process is actually still working
+                            if [ $processed -eq $old_processed ]; then
+                                progress_stuck_count=$((progress_stuck_count + 1))
+                            else
+                                progress_stuck_count=0
+                            fi
+
+                            # If progress appears stuck at high percentage, assume it's complete
+                            if [ $progress_stuck_count -ge $max_stuck_count ]; then
+                                break
+                            fi
+
+                            # Cap at total_objects - 1 to show we're almost done
+                            processed=$((total_objects - 1))
                         fi
+
                         show_progress_bar $processed $total_objects
                         sleep 1
                     done
-                    
+
+                    # Show 100% progress
+                    show_progress_bar $total_objects $total_objects
+                    echo
+
                     wait $restore_pid
                     restore_status=$?
                 fi
@@ -762,17 +853,40 @@ restore_database() {
                 else
                     zstd -dc "$file" | PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" > /dev/null 2>&1 &
                     restore_pid=$!
-                    
+
                     processed=0
+                    progress_stuck_count=0
+                    max_stuck_count=5  # If progress appears stuck for this many iterations, assume it's complete
+
                     while kill -0 $restore_pid 2>/dev/null; do
+                        old_processed=$processed
                         processed=$((processed + total_objects / 100))
-                        if [ $processed -gt $total_objects ]; then
-                            processed=$total_objects
+
+                        if [ $processed -gt $((total_objects - 5)) ]; then
+                            # When we're close to completion, check if process is actually still working
+                            if [ $processed -eq $old_processed ]; then
+                                progress_stuck_count=$((progress_stuck_count + 1))
+                            else
+                                progress_stuck_count=0
+                            fi
+
+                            # If progress appears stuck at high percentage, assume it's complete
+                            if [ $progress_stuck_count -ge $max_stuck_count ]; then
+                                break
+                            fi
+
+                            # Cap at total_objects - 1 to show we're almost done
+                            processed=$((total_objects - 1))
                         fi
+
                         show_progress_bar $processed $total_objects
                         sleep 1
                     done
-                    
+
+                    # Show 100% progress
+                    show_progress_bar $total_objects $total_objects
+                    echo
+
                     wait $restore_pid
                     restore_status=$?
                 fi
@@ -783,17 +897,40 @@ restore_database() {
                 else
                     PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$file" > /dev/null 2>&1 &
                     restore_pid=$!
-                    
+
                     processed=0
+                    progress_stuck_count=0
+                    max_stuck_count=5  # If progress appears stuck for this many iterations, assume it's complete
+
                     while kill -0 $restore_pid 2>/dev/null; do
+                        old_processed=$processed
                         processed=$((processed + total_objects / 100))
-                        if [ $processed -gt $total_objects ]; then
-                            processed=$total_objects
+
+                        if [ $processed -gt $((total_objects - 5)) ]; then
+                            # When we're close to completion, check if process is actually still working
+                            if [ $processed -eq $old_processed ]; then
+                                progress_stuck_count=$((progress_stuck_count + 1))
+                            else
+                                progress_stuck_count=0
+                            fi
+
+                            # If progress appears stuck at high percentage, assume it's complete
+                            if [ $progress_stuck_count -ge $max_stuck_count ]; then
+                                break
+                            fi
+
+                            # Cap at total_objects - 1 to show we're almost done
+                            processed=$((total_objects - 1))
                         fi
+
                         show_progress_bar $processed $total_objects
                         sleep 1
                     done
-                    
+
+                    # Show 100% progress
+                    show_progress_bar $total_objects $total_objects
+                    echo
+
                     wait $restore_pid
                     restore_status=$?
                 fi
@@ -812,24 +949,46 @@ restore_database() {
             echo -e "${CYAN}Restoring tar format backup...${NC}"
             PGPASSWORD="$DB_PASSWORD" pg_restore -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -j "$PARALLEL_JOBS" -F tar "$file" > /dev/null 2>&1 &
             restore_pid=$!
-            
+
             # Monitor progress
             processed=0
+            progress_stuck_count=0
+            max_stuck_count=5  # If progress appears stuck for this many iterations, assume it's complete
+
             while kill -0 $restore_pid 2>/dev/null; do
+                old_processed=$processed
                 processed=$((processed + total_objects / 100))
-                if [ $processed -gt $total_objects ]; then
-                    processed=$total_objects
+
+                if [ $processed -gt $((total_objects - 5)) ]; then
+                    # When we're close to completion, check if process is actually still working
+                    if [ $processed -eq $old_processed ]; then
+                        progress_stuck_count=$((progress_stuck_count + 1))
+                    else
+                        progress_stuck_count=0
+                    fi
+
+                    # If progress appears stuck at high percentage, assume it's complete
+                    if [ $progress_stuck_count -ge $max_stuck_count ]; then
+                        break
+                    fi
+
+                    # Cap at total_objects - 1 to show we're almost done
+                    processed=$((total_objects - 1))
                 fi
+
                 show_progress_bar $processed $total_objects
                 sleep 1
             done
-            
+
+            # Show 100% progress
+            show_progress_bar $total_objects $total_objects
+            echo
+
             wait $restore_pid
             restore_status=$?
-            
+
             if [ $restore_status -eq 0 ]; then
-                show_progress_bar $total_objects $total_objects
-                echo -e "\n${GREEN}${BOLD}Restore completed successfully!${NC}"
+                echo -e "${GREEN}${BOLD}Restore completed successfully!${NC}"
             else
                 echo -e "\n${RED}${BOLD}Restore failed with status $restore_status.${NC}"
                 exit 1
@@ -840,24 +999,46 @@ restore_database() {
             echo -e "${CYAN}Restoring directory format backup...${NC}"
             PGPASSWORD="$DB_PASSWORD" pg_restore -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -j "$PARALLEL_JOBS" -F directory "$file" > /dev/null 2>&1 &
             restore_pid=$!
-            
+
             # Monitor progress
             processed=0
+            progress_stuck_count=0
+            max_stuck_count=5  # If progress appears stuck for this many iterations, assume it's complete
+
             while kill -0 $restore_pid 2>/dev/null; do
+                old_processed=$processed
                 processed=$((processed + total_objects / 100))
-                if [ $processed -gt $total_objects ]; then
-                    processed=$total_objects
+
+                if [ $processed -gt $((total_objects - 5)) ]; then
+                    # When we're close to completion, check if process is actually still working
+                    if [ $processed -eq $old_processed ]; then
+                        progress_stuck_count=$((progress_stuck_count + 1))
+                    else
+                        progress_stuck_count=0
+                    fi
+
+                    # If progress appears stuck at high percentage, assume it's complete
+                    if [ $progress_stuck_count -ge $max_stuck_count ]; then
+                        break
+                    fi
+
+                    # Cap at total_objects - 1 to show we're almost done
+                    processed=$((total_objects - 1))
                 fi
+
                 show_progress_bar $processed $total_objects
                 sleep 1
             done
-            
+
+            # Show 100% progress
+            show_progress_bar $total_objects $total_objects
+            echo
+
             wait $restore_pid
             restore_status=$?
-            
+
             if [ $restore_status -eq 0 ]; then
-                show_progress_bar $total_objects $total_objects
-                echo -e "\n${GREEN}${BOLD}Restore completed successfully!${NC}"
+                echo -e "${GREEN}${BOLD}Restore completed successfully!${NC}"
             else
                 echo -e "\n${RED}${BOLD}Restore failed with status $restore_status.${NC}"
                 exit 1
