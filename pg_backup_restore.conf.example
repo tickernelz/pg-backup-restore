@@ -1,0 +1,24 @@
+# PostgreSQL Backup & Restore Tool Configuration
+# Author: Zhafron Adani Kautsar (tickernelz)
+# Website: https://github.com/tickernelz
+# License: MIT
+#
+# Copy this file to ~/.pg_backup_restore.conf and modify as needed
+
+# Database connection settings
+DB_HOST="localhost"
+DB_PORT="5432"
+DB_USER="postgres"
+DB_PASSWORD=""
+
+# Backup settings
+BACKUP_FORMAT="custom"
+COMPRESSION_METHOD="gzip"
+COMPRESSION_LEVEL=6
+
+# Restore settings
+PARALLEL_JOBS=2
+
+# Last used values (automatically updated by the tool)
+LAST_DATABASE=""
+LAST_BACKUP_FILE=""

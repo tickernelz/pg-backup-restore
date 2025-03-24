@@ -1,0 +1,28 @@
+# Backup files
+*.dump
+*.sql
+*.backup
+*.bak
+*.tar
+*.gz
+*.bz2
+*.xz
+*.zst
+
+# Configuration files (except example)
+.pg_backup_restore.conf
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
